@@ -26,7 +26,7 @@ const {
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const OWNER_ID = process.env.OWNER_ID;
 const bot = new Telegraf(BOT_TOKEN);
-const { domain, port } = require("./database/config");
+const port = process.env.PORT || 3000;
 const app = express();
 
 // ==================== GLOBAL VARIABLES ==================== //
@@ -705,7 +705,7 @@ async function startApp() {
   initializeWhatsAppConnections();
 
   app.listen(port, () => {
-    console.log(`🚀 Server aktif di ${domain}:${port}`);
+    console.log(`🚀 Server aktif di port ${port}`);
   });
 }
 
