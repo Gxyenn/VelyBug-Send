@@ -1,0 +1,23 @@
+name: vely-bug
+services:
+  - name: web
+    git:
+      branch: main
+      repository: Gxyenn/VelyBug-Send
+    instance_type: free
+    ports:
+      - port: 8080
+        protocol: HTTP
+    health_checks:
+      - path: "/"
+        port: 8080
+        protocol: HTTP
+    env:
+      - key: BOT_TOKEN
+        value: "GANTI_DENGAN_TOKEN_BOT_ANDA"
+      - key: OWNER_ID
+        value: "GANTI_DENGAN_ID_TELEGRAM_ANDA"
+      - key: MONGO_URI
+        value: "GANTI_DENGAN_KONEKSI_STRING_MONGO_ANDA"
+      - key: PORT
+        value: "8080"
