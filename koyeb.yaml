@@ -1,4 +1,4 @@
-name: vely-bug
+name: velybug-send
 services:
   - name: web
     git:
@@ -14,10 +14,10 @@ services:
         protocol: HTTP
     env:
       - key: BOT_TOKEN
-        value: "GANTI_DENGAN_TOKEN_BOT_ANDA"
+        value: "mongodb+srv://gxyenndev_db_user:EsALd5vduVSoClso@cluster0.rnrudep.mongodb.net/VelyBug-Send?retryWrites=true&w=majority"
       - key: OWNER_ID
-        value: "GANTI_DENGAN_ID_TELEGRAM_ANDA"
+        value: "-1003283150801"
       - key: MONGO_URI
-        value: "GANTI_DENGAN_KONEKSI_STRING_MONGO_ANDA"
+        value: "8137964608:AAE6Yo4wWCcb7h3oUA2KcV-GxEn4vkZlbpE"
       - key: PORT
         value: "8080"
