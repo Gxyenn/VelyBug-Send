@@ -5,7 +5,7 @@ const pino = require('pino');
 const crypto = require('crypto');
 const chalk = require('chalk');
 const path = require("path");
-const config = require("./database/config.js");
+
 const axios = require("axios");
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -81,30 +81,81 @@ async function getUsers() {
     return await db.collection('users').find().toArray();
 }
 
+const { proto } = require('lotusbail');
+
+// Fungsi untuk menangani state otentikasi dengan MongoDB
+const useMongoAuthState = async (botNumber) => {
+    const db = getDB();
+    const collection = db.collection('wa_sessions');
+
+    const writeData = async (data, id) => {
+        const sanitizedId = id.replace(/\//g, '__');
+        await collection.updateOne({ _id: sanitizedId, botNumber }, { $set: { data: JSON.stringify(data, undefined, 2) } }, { upsert: true });
+    };
+
+    const readData = async (id) => {
+        try {
+            const sanitizedId = id.replace(/\//g, '__');
+            const doc = await collection.findOne({ _id: sanitizedId, botNumber });
+            return doc ? JSON.parse(doc.data) : null;
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const removeData = async (id) => {
+        try {
+            const sanitizedId = id.replace(/\//g, '__');
+            await collection.deleteOne({ _id: sanitizedId, botNumber });
+        } catch (error) {
+            // ignore
+        }
+    };
+
+    const creds = await readData('creds') || proto.AuthenticationCreds.fromJSON(proto.AuthenticationCreds.create());
+
+    return {
+        state: {
+            creds,
+            keys: {
+                get: async (type, ids) => {
+                    const data = {};
+                    await Promise.all(
+                        ids.map(async (id) => {
+                            let value = await readData(`${type}-${id}`);
+                            if (type === 'app-state-sync-key') {
+                                value = proto.AppStateSyncKeyData.fromObject(value);
+                            }
+                            data[id] = value;
+                        })
+                    );
+                    return data;
+                },
+                set: async (data) => {
+                    const tasks = [];
+                    for (const category in data) {
+                        for (const id in data[category]) {
+                            const value = data[category][id];
+                            const key = `${category}-${id}`;
+                            tasks.push(value ? writeData(value, key) : removeData(key));
+                        }
+                    }
+                    await Promise.all(tasks);
+                },
+            },
+        },
+        saveCreds: () => writeData(creds, 'creds'),
+        removeCreds: async () => {
+            await collection.deleteMany({ botNumber });
+        }
+    };
+};
+
 function generateKey(length = 4) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
 }
 
-function parseDuration(str) {
-  if (!str || typeof str !== "string") return null;
-  
-  const match = str.match(/^(\d+)(s|m|h|d)$/i);
-  if (!match) return null;
-
-  const value = parseInt(match[1]);
-  const unit = match[2].toLowerCase();
-
-  switch (unit) {
-    case "s": return value * 1000;            // detik → ms
-    case "m": return value * 60 * 1000;       // menit → ms
-    case "h": return value * 60 * 60 * 1000;  // jam → ms
-    case "d": return value * 24 * 60 * 60 * 1000; // hari → ms
-    default: return null;
-  }
-}
-
-
 
 function parseDuration(str) {
   if (!str || typeof str !== "string") return null;
@@ -124,19 +175,33 @@ function parseDuration(str) {
   }
 }
 
-// ==================== GLOBAL COOLING SYSTEM ==================== //
-// WhatsApp connection utilities
-const saveActive = (BotNumber) => {
-  const list = fs.existsSync(file_session) ? JSON.parse(fs.readFileSync(file_session)) : [];
-  if (!list.includes(BotNumber)) {
-    fs.writeFileSync(file_session, JSON.stringify([...list, BotNumber]));
-  }
+// ==================== SESSION MANAGEMENT ==================== //
+const getActiveSessions = async () => {
+    const db = getDB();
+    const doc = await db.collection('active_sessions').findOne({ _id: 'sessions' });
+    return doc ? doc.numbers : [];
 };
 
-const sessionPath = (BotNumber) => {
-  const dir = path.join(sessions_dir, `device${BotNumber}`);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
+const saveActiveSession = async (botNumber) => {
+    const db = getDB();
+    await db.collection('active_sessions').updateOne({ _id: 'sessions' }, { $addToSet: { numbers: botNumber } }, { upsert: true });
+};
+
+const removeActiveSession = async (botNumber) => {
+    const db = getDB();
+    await db.collection('active_sessions').updateOne({ _id: 'sessions' }, { $pull: { numbers: botNumber } });
+};
+
+const writeCreds = async (botNumber, creds) => {
+    const db = getDB();
+    const collection = db.collection('wa_sessions');
+    await collection.updateOne({ _id: 'creds', botNumber }, { $set: { data: JSON.stringify(creds, undefined, 2) } }, { upsert: true });
+};
+
+const removeSession = async (botNumber) => {
+    const db = getDB();
+    const collection = db.collection('wa_sessions');
+    await collection.deleteMany({ botNumber });
 };
 
 const makeStatus = (number, status) => `\`\`\`
@@ -166,8 +231,7 @@ const makeCode = (number, code) => ({
 // ==================== WHATSAPP CONNECTION HANDLERS ==================== //
 
 const initializeWhatsAppConnections = async () => {
-  if (!fs.existsSync(file_session)) return;
-  const activeNumbers = JSON.parse(fs.readFileSync(file_session));
+  const activeNumbers = await getActiveSessions();
   
   console.log(chalk.blue(`
 ┌──────────────────────────────┐
@@ -178,36 +242,35 @@ const initializeWhatsAppConnections = async () => {
 
   for (const BotNumber of activeNumbers) {
     console.log(chalk.green(`Menghubungkan: ${BotNumber}`));
-    const sessionDir = sessionPath(BotNumber);
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const { state, saveCreds } = await useMongoAuthState(BotNumber);
 
-    sock = makeWASocket({
+    const sock = makeWASocket({
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: "silent" }),
       defaultQueryTimeoutMs: undefined,
     });
 
-    await new Promise((resolve, reject) => {
-      sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
-        if (connection === "open") {
-          console.log(`Bot ${BotNumber} terhubung!`);
-          sessions.set(BotNumber, sock);
-          return resolve();
+    sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+      if (connection === "open") {
+        console.log(`Bot ${BotNumber} terhubung!`);
+        sessions.set(BotNumber, sock);
+      }
+      if (connection === "close") {
+        if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+          // Reconnect logic can be added here if needed
+        } else {
+            console.log(`Bot ${BotNumber} logged out.`);
+            removeActiveSession(BotNumber);
         }
-        if (connection === "close") {
-          const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-          return shouldReconnect ? await initializeWhatsAppConnections() : reject(new Error("Koneksi ditutup"));
-        }
-      });
-      sock.ev.on("creds.update", saveCreds);
+      }
     });
+    sock.ev.on("creds.update", saveCreds);
   }
 };
 
 const connectToWhatsApp = async (BotNumber, chatId, ctx) => {
-  const sessionDir = sessionPath(BotNumber);
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+  const { state, saveCreds, removeCreds } = await useMongoAuthState(BotNumber);
 
   let statusMessage = await ctx.reply(`Pairing dengan nomor *${BotNumber}*...`, { parse_mode: "Markdown" });
 
@@ -219,7 +282,7 @@ const connectToWhatsApp = async (BotNumber, chatId, ctx) => {
     }
   };
 
-  sock = makeWASocket({
+  const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
     logger: pino({ level: "silent" }),
@@ -228,43 +291,33 @@ const connectToWhatsApp = async (BotNumber, chatId, ctx) => {
 
   let isConnected = false;
 
-  sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+  sock.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
     if (connection === "close") {
-      const code = lastDisconnect?.error?.output?.statusCode;
-      if (code >= 500 && code < 600) {
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      if (statusCode !== DisconnectReason.loggedOut) {
         await editStatus(makeStatus(BotNumber, "Menghubungkan ulang..."));
-        return await connectToWhatsApp(BotNumber, chatId, ctx);
-      }
-
-      if (!isConnected) {
-        await editStatus(makeStatus(BotNumber, "❌ Gagal terhubung."));
-        return fs.rmSync(sessionDir, { recursive: true, force: true });
+        connectToWhatsApp(BotNumber, chatId, ctx);
+      } else {
+        await editStatus(makeStatus(BotNumber, "❌ Gagal terhubung, QR expired atau logout."));
+        await removeCreds();
       }
     }
 
     if (connection === "open") {
       isConnected = true;
       sessions.set(BotNumber, sock);
-      saveActive(BotNumber);
-      return await editStatus(makeStatus(BotNumber, "✅ Berhasil terhubung."));
+      await saveActiveSession(BotNumber);
+      await editStatus(makeStatus(BotNumber, "✅ Berhasil terhubung."));
     }
 
-    if (connection === "connecting") {
-      await new Promise(r => setTimeout(r, 1000));
-      try {
-        if (!fs.existsSync(`${sessionDir}/creds.json`)) {
-          const code = await sock.requestPairingCode(BotNumber, "DEWA1234");
-          const formatted = code.match(/.{1,4}/g)?.join("-") || code;
-          await ctx.telegram.editMessageText(chatId, statusMessage.message_id, null, 
+    if (qr) {
+        const code = qr;
+        const formatted = code.match(/.{1,4}/g)?.join("-") || code;
+        await ctx.telegram.editMessageText(chatId, statusMessage.message_id, null, 
             makeCode(BotNumber, formatted).text, {
               parse_mode: "Markdown",
               reply_markup: makeCode(BotNumber, formatted).reply_markup
             });
-        }
-      } catch (err) {
-        console.error("Error requesting code:", err);
-        await editStatus(makeStatus(BotNumber, `❗ ${err.message}`));
-      }
     }
   });
 
@@ -362,19 +415,19 @@ bot.command("delbot", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY ACCES USER\n—Please register first to access this feature.");
   }
   
-  if (args.length < 2) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delsender Number_\n_Example : /delsender 628xxxx_", { parse_mode: "Markdown" });
+  if (args.length < 2) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delbot Number_\n_Example : /delbot 628xxxx_", { parse_mode: "Markdown" });
 
   const number = args[1];
   if (!sessions.has(number)) return ctx.reply("Sender tidak ditemukan.");
 
   try {
-    const sessionDir = sessionPath(number);
-    sessions.get(number).end();
+    const sock = sessions.get(number);
+    sock.end(new Error("Session deleted by user"));
     sessions.delete(number);
-    fs.rmSync(sessionDir, { recursive: true, force: true });
+    
+    await removeActiveSession(number);
+    await removeSession(number);
 
-    const data = JSON.parse(fs.readFileSync(file_session));
-    fs.writeFileSync(file_session, JSON.stringify(data.filter(n => n !== number)));
     ctx.reply(`✅ Session untuk bot ${number} berhasil dihapus.`);
   } catch (err) {
     console.error(err);
@@ -412,7 +465,7 @@ bot.command("add", async (ctx) => {
   const doc = reply.document;
   const name = doc.file_name.toLowerCase();
   if (![".json", ".zip", ".tar", ".tar.gz", ".tgz"].some(ext => name.endsWith(ext))) {
-    return ctx.reply("❌ File bukan session yang valid (.json/.zip/.tar/.tgz)");
+    return ctx.reply("❌ File bukan session yang valid (.json/.zip/.tar/.tar.gz/.tgz)");
   }
 
   await ctx.reply("🔄 Memproses session…");
@@ -440,11 +493,9 @@ bot.command("add", async (ctx) => {
 
     const creds = await fse.readJson(credsPath);
     const botNumber = creds.me.id.split(":")[0];
-    const destDir = sessionPath(botNumber);
 
-    await fse.remove(destDir);
-    await fse.copy(tmp, destDir);
-    saveActive(botNumber);
+    await writeCreds(botNumber, creds);
+    await saveActiveSession(botNumber);
 
     await connectToWhatsApp(botNumber, ctx.chat.id, ctx);
 
