@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHADOW-X APPS</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:#0a0f1a;
+      --card:#101628;
+      --muted:#9aa4c7;
+      --text:#e8ecff;
+      --primary:#9b5cff;
+      --secondary:#00d4ff;
+      --accent:#6dd6ff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body {
+      font-family:Poppins, sans-serif;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(circle at 20% 20%, rgba(155,92,255,.2), transparent 30%),
+                  radial-gradient(circle at 80% 10%, rgba(0,212,255,.2), transparent 25%),
+                  radial-gradient(circle at 50% 90%, rgba(109,214,255,.15), transparent 30%),
+                  #0a0f1a;
+      overflow:hidden;
+      padding:20px;
+    }
+    .card {
+      background: rgba(255,255,255,.05);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 18px;
+      padding: 22px 20px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(155,92,255,.3);
+      animation: fadeIn 1s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .logo {
+      width: 70px; height: 70px; border-radius: 50%;
+      margin: 0 auto 14px;
+      box-shadow:0 0 16px var(--primary), 0 0 30px rgba(0,212,255,.4);
+      object-fit:cover;
+    }
+    @keyframes spinGlow {
+      0%   { transform:rotate(0deg); box-shadow:0 0 16px var(--primary);}
+      50%  { box-shadow:0 0 26px var(--secondary);}
+      100% { transform:rotate(360deg); box-shadow:0 0 16px var(--primary);}
+    }
+    .title {
+      font-size:22px;
+      font-family:Orbitron, sans-serif;
+      font-weight:800;
+      color: var(--primary);
+      margin-bottom:4px;
+      text-shadow:0 0 10px rgba(155,92,255,.7);
+    }
+    .subtitle {
+      font-size:12px;
+      color: var(--muted);
+      margin-bottom:20px;
+    }
+    .form-group {
+      position:relative;
+      margin-bottom:14px;
+    }
+    .form-group i {
+      position:absolute;left:12px;top:50%;
+      transform:translateY(-50%);
+      color:var(--secondary);
+      font-size:13px;
+    }
+    input {
+      width:100%;
+      padding:12px 12px 12px 36px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.15);
+      background:rgba(7,10,20,.6);
+      color:var(--text);
+      font-size:13px;
+      outline:none;
+      transition: all .3s;
+    }
+    input:focus {
+      border-color:var(--secondary);
+      box-shadow:0 0 6px var(--secondary);
+    }
+    button {
+      width:100%;
+      padding:12px;
+      font-size:14px;
+      font-weight:600;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      background:linear-gradient(90deg, var(--primary), var(--secondary));
+      color:white;
+      transition: all .3s ease;
+      box-shadow:0 0 10px rgba(155,92,255,.4);
+    }
+    button:hover {
+      transform:translateY(-2px) scale(1.03);
+      box-shadow:0 0 16px rgba(0,212,255,.6);
+    }
+    .buy-access {
+      margin-top:14px;
+      display:inline-block;
+      font-size:12px;
+      padding:8px 16px;
+      border-radius:10px;
+      font-weight:500;
+      background:linear-gradient(90deg,var(--secondary),var(--accent));
+      color:white;
+      text-decoration:none;
+      box-shadow:0 0 12px rgba(0,212,255,.4);
+      font-family:Poppins, sans-serif;
+      transition: all .25s;
+    }
+    .buy-access:hover { transform:scale(1.05); }
+    .footer {
+      margin-top:20px;
+      font-size:10px;
+      color:var(--muted);
+    }
+    .toast {
+      position:fixed;
+      bottom:30px;
+      left:50%;
+      transform:translateX(-50%);
+      background: var(--primary);
+      color:white;
+      padding:10px 16px;
+      border-radius:8px;
+      font-size:12px;
+      font-weight:500;
+      box-shadow:0 0 12px rgba(155,92,255,.5);
+      opacity:0;
+      animation: fadeInOut 3.8s ease forwards;
+      z-index:100;
+    }
+    @keyframes fadeInOut {
+      0%{opacity:0; transform:translate(-50%,20px);}
+      10%{opacity:1; transform:translate(-50%,0);}
+      90%{opacity:1;}
+      100%{opacity:0; transform:translate(-50%,20px);}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="https://l.top4top.io/p_3547nzwxm0.jpg" alt="Logo" class="logo" />
+    <div class="icon"><i class="fas fa-skull-crossbones"></i></div>
+    <div class="title">Shadow - Trashed</div>
+    <div class="subtitle">Gateway Shadow Trashed and Fire</div>
+
+    <form method="POST" action="/auth">
+      <div class="form-group">
+        <i class="fas fa-user"></i>
+        <input type="text" name="username" placeholder="Username" required />
+      </div>
+      <div class="form-group">
+        <i class="fas fa-key"></i>
+        <input type="password" name="key" placeholder="Password" required />
+      </div>
+      <button type="submit">
+        <i class="fa-solid fa-right-to-bracket"></i> LOGIN
+      </button>
+    </form>
+
+    <a class="buy-access" href="https://t.me/vinzxiterr" target="_blank">
+      <i class="fas fa-coins"></i> Buy Key Access
+    </a>
+
+    <div class="footer">© 2025 VinzxExc1st</div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+  <script>
+
+    const params = new URLSearchParams(window.location.search);
+
+    const msg = params.get("msg");
+
+    if (msg) {
+
+      const toast = document.getElementById("toast");
+
+      toast.textContent = msg;
+
+      toast.style.display = "block";
+
+    }
+
+  </script>
+</body>
+</html>
