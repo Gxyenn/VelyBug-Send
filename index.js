@@ -23,8 +23,8 @@ const {
 } = require('lotusbail');
 
 // ==================== CONFIGURATION ==================== //
-const BOT_TOKEN = "TOKENS BOT MU";
-const OWNER_ID = "ID_MU";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const OWNER_ID = process.env.OWNER_ID;
 const bot = new Telegraf(BOT_TOKEN);
 const { domain, port } = require("./database/config");
 const app = express();
@@ -40,24 +40,45 @@ let DEFAULT_COOLDOWN_MS = 5 * 60 * 1000; // default 5 menit
 let userApiBug = null;
 let sock;
 
+const { connect, getDB } = require("./database/mongo.js");
+
 // ==================== UTILITY FUNCTIONS ==================== //
-function loadAkses() {
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ owners: [], akses: [] }, null, 2));
-  return JSON.parse(fs.readFileSync(file));
+async function loadAkses() {
+  const db = getDB();
+  let config = await db.collection("config").findOne();
+  if (!config) {
+    config = { owners: [], akses: [] };
+    await db.collection("config").insertOne(config);
+  }
+  return config;
 }
 
-function saveAkses(data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+async function saveAkses(data) {
+  const db = getDB();
+  await db.collection("config").updateOne({}, { $set: data }, { upsert: true });
 }
 
-function isOwner(id) {
-  const data = loadAkses();
+async function isOwner(id) {
+  const data = await loadAkses();
   return data.owners.includes(id);
 }
 
-function isAuthorized(id) {
-  const data = loadAkses();
+async function isAuthorized(id) {
+  const data = await loadAkses();
   return isOwner(id) || data.akses.includes(id);
+}
+
+async function saveUsers(users) {
+    const db = getDB();
+    await db.collection('users').deleteMany({});
+    if (users.length > 0) {
+        await db.collection('users').insertMany(users);
+    }
+}
+
+async function getUsers() {
+    const db = getDB();
+    return await db.collection('users').find().toArray();
 }
 
 function generateKey(length = 4) {
@@ -66,45 +87,24 @@ function generateKey(length = 4) {
 }
 
 function parseDuration(str) {
-  const match = str.match(/^(\d+)([dh])$/);
+  if (!str || typeof str !== "string") return null;
+  
+  const match = str.match(/^(\d+)(s|m|h|d)$/i);
   if (!match) return null;
+
   const value = parseInt(match[1]);
-  const unit = match[2];
-  return unit === "d" ? value * 86400000 : value * 3600000;
-}
+  const unit = match[2].toLowerCase();
 
-function saveUsers(users) {
-  const filePath = path.join(__dirname, 'database', 'user.json');
-  fs.writeFileSync(filePath, JSON.stringify(users, null, 2), 'utf-8');
-}
-
-function getUsers() {
-  const filePath = path.join(__dirname, 'database', 'user.json');
-  if (!fs.existsSync(filePath)) return [];
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-}
-
-// User management functions
-function saveUsers(users) {
-  const filePath = path.join(__dirname, 'database', 'user.json');
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(users, null, 2), 'utf-8');
-    console.log("✅ Data user berhasil disimpan.");
-  } catch (err) {
-    console.error("❌ Gagal menyimpan user:", err);
+  switch (unit) {
+    case "s": return value * 1000;            // detik → ms
+    case "m": return value * 60 * 1000;       // menit → ms
+    case "h": return value * 60 * 60 * 1000;  // jam → ms
+    case "d": return value * 24 * 60 * 60 * 1000; // hari → ms
+    default: return null;
   }
 }
 
-function getUsers() {
-  const filePath = path.join(__dirname, 'database', 'user.json');
-  if (!fs.existsSync(filePath)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch (err) {
-    console.error("❌ Gagal membaca file user.json:", err);
-    return [];
-  }
-}
+
 
 function parseDuration(str) {
   if (!str || typeof str !== "string") return null;
@@ -281,7 +281,7 @@ bot.command("start", (ctx) => {
 高速・柔軟性・絶対的な安全性を備えた 次世代ボットが今、覚醒する。
 
 〢「 𝐗𝐈𝐒 ☇ 𝐂𝐨𝐫𝐞 ° 𝐒𝐲𝐬𝐭𝐞𝐦𝐬 」
- ࿇ Author : —!s' VinzxExc1st
+ ࿇ Author : —!s' Gxyenn 正式
  ࿇ Type : ( Case─Plugins )
  ࿇ League : Asia/Jakarta-
 ┌─────────
@@ -316,8 +316,8 @@ bot.command("start", (ctx) => {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "👤「所有者」", url: "https://t.me/vinzxiterr" },
-          { text: "🕊「チャネル」", url: "t.me/allaboutvinzxiter" }
+            { text: "👤「所有者」", url: "https://t.me/gxyenn" },
+          { text: "🕊「チャネル」", url: "t.me/gxyenn" }
           ]
         ]
       }
@@ -330,7 +330,7 @@ bot.command("addbot", async (ctx) => {
   const userId = ctx.from.id.toString();
   const args = ctx.message.text.split(" ");
 
-  if (!isOwner(userId) && !isAuthorized(userId)) {
+  if (!await isOwner(userId) && !await isAuthorized(userId)) {
     return ctx.reply("[ ! ] - ONLY ACCES USER\n—Please register first to access this feature.");
   }
 
@@ -342,10 +342,10 @@ bot.command("addbot", async (ctx) => {
   await connectToWhatsApp(BotNumber, ctx.chat.id, ctx);
 });
 
-bot.command("listsender", (ctx) => {
+bot.command("listsender", async (ctx) => {
   const userId = ctx.from.id.toString();
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
@@ -358,7 +358,7 @@ bot.command("delbot", async (ctx) => {
   const userId = ctx.from.id.toString();
   const args = ctx.message.text.split(" ");
   
-  if (!isOwner(userId) && !isAuthorized(userId)) {
+  if (!await isOwner(userId) && !await isAuthorized(userId)) {
     return ctx.reply("[ ! ] - ONLY ACCES USER\n—Please register first to access this feature.");
   }
   
@@ -400,7 +400,7 @@ async function findCredsFile(dir) {
 // ===== Command /add =====
 bot.command("add", async (ctx) => {
   const userId = ctx.from.id.toString();
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("❌ Hanya owner yang bisa menggunakan perintah ini.");
   }
 
@@ -456,11 +456,11 @@ bot.command("add", async (ctx) => {
 });
 
 // Key management commands
-bot.command("ckey", (ctx) => {
+bot.command("ckey", async (ctx) => {
   const userId = ctx.from.id.toString();
   const args   = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId) && !isAuthorized(userId)) {
+  if (!await isOwner(userId) && !await isAuthorized(userId)) {
     return ctx.telegram.sendMessage(
       userId,
       "[ ! ] - ONLY ACCES USER\n—Please register first to access this feature."
@@ -486,7 +486,7 @@ bot.command("ckey", (ctx) => {
 
   const key     = generateKey(4);
   const expired = Date.now() + durationMs;
-  const users   = getUsers();
+  const users   = await getUsers();
 
   const userIndex = users.findIndex(u => u.username === username);
   if (userIndex !== -1) {
@@ -524,11 +524,11 @@ bot.command("ckey", (ctx) => {
   });
 });
 
-bot.command("listkey", (ctx) => {
+bot.command("listkey", async (ctx) => {
   const userId = ctx.from.id.toString();
-  const users = getUsers();
+  const users = await getUsers();
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
@@ -550,17 +550,17 @@ bot.command("listkey", (ctx) => {
   ctx.replyWithMarkdown(teks);
 });
 
-bot.command("delkey", (ctx) => {
+bot.command("delkey", async (ctx) => {
   const userId = ctx.from.id.toString();
   const username = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId) && !isAuthorized(userId)) {
+  if (!await isOwner(userId) && !await isAuthorized(userId)) {
     return ctx.reply("[ ! ] - ONLY ACCES USER\n—Please register first to access this feature.");
   }
   
   if (!username) return ctx.reply("❗Enter username!\nExample: /delkey rann");
 
-  const users = getUsers();
+  const users = await getUsers();
   const index = users.findIndex(u => u.username === username);
   if (index === -1) return ctx.reply(`❌ Username \`${username}\` not found.`, { parse_mode: "Markdown" });
 
@@ -570,17 +570,17 @@ bot.command("delkey", (ctx) => {
 });
 
 // Access control commands
-bot.command("addacces", (ctx) => {
+bot.command("addacces", async (ctx) => {
   const userId = ctx.from.id.toString();
   const id = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
   if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addacces Id_\n_Example : /addacces 7066156416_", { parse_mode: "Markdown" });
 
-  const data = loadAkses();
+  const data = await loadAkses();
   if (data.akses.includes(id)) return ctx.reply("✅ User already has access.");
 
   data.akses.push(id);
@@ -588,17 +588,17 @@ bot.command("addacces", (ctx) => {
   ctx.reply(`✅ Access granted to ID: ${id}`);
 });
 
-bot.command("delacces", (ctx) => {
+bot.command("delacces", async (ctx) => {
   const userId = ctx.from.id.toString();
   const id = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
   if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delacces Id_\n_Example : /delacces 7066156416_", { parse_mode: "Markdown" });
 
-  const data = loadAkses();
+  const data = await loadAkses();
   if (!data.akses.includes(id)) return ctx.reply("❌ User not found.");
 
   data.akses = data.akses.filter(uid => uid !== id);
@@ -606,17 +606,17 @@ bot.command("delacces", (ctx) => {
   ctx.reply(`✅ Access to user ID ${id} removed.`);
 });
 
-bot.command("addowner", (ctx) => {
+bot.command("addowner", async (ctx) => {
   const userId = ctx.from.id.toString();
   const id = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
   if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addowner Id_\n_Example : /addowner 7066156416_", { parse_mode: "Markdown" });
 
-  const data = loadAkses();
+  const data = await loadAkses();
   if (data.owners.includes(id)) return ctx.reply("❌ Already an owner.");
 
   data.owners.push(id);
@@ -624,16 +624,16 @@ bot.command("addowner", (ctx) => {
   ctx.reply(`✅ New owner added: ${id}`);
 });
 
-bot.command("delowner", (ctx) => {
+bot.command("delowner", async (ctx) => {
   const userId = ctx.from.id.toString();
   const id = ctx.message.text.split(" ")[1];
   
-  if (!isOwner(userId)) {
+  if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delowner Id_\n_Example : /delowner 7066156416_", { parse_mode: "Markdown" });
 
-  const data = loadAkses();
+  const data = await loadAkses();
 
   if (!data.owners.includes(id)) return ctx.reply("❌ Not the owner.");
 
@@ -684,18 +684,31 @@ console.log(chalk.blue(`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ╰╯╱╰┻━━━┻━━━┻━━━┻━━━┻━━━┻╯╱╰━┻━━━╯⠀⠀⠀⠀⠀⠀⠀
 `));
 
-bot.launch();
-console.log(chalk.red(`
-╭─☐ BOT SHADOW TRASHED
+initializeWhatsAppConnections();
+
+// ==================== WEB SERVER ==================== //
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+async function startApp() {
+  await connect();
+
+  bot.launch();
+  console.log(chalk.red(`
+╭─☐ BOT Vely Bug
 ├─ ID OWN : ${OWNER_ID}
-├─ DEVELOPER : VINZXESXC1ST 
+├─ DEVELOPER : Gxyenn 正式 
 ├─ MY SUPPORT : ALLAH 
 ├─ BOT : CONNECTED ✅
 ╰───────────────────`));
 
-initializeWhatsAppConnections();
+  initializeWhatsAppConnections();
 
-// ==================== WEB SERVER ==================== //
+  app.listen(port, () => {
+    console.log(`🚀 Server aktif di ${domain}:${port}`);
+  });
+}
+
 // ==================== WEB SERVER ==================== //
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -717,9 +730,9 @@ app.get("/login", (req, res) => {
   });
 });
 
-app.post("/auth", (req, res) => {
+app.post("/auth", async (req, res) => {
   const { username, key } = req.body;
-  const users = getUsers();
+  const users = await getUsers();
 
   const user = users.find(u => u.username === username && u.key === key);
   if (!user) {
@@ -730,17 +743,17 @@ app.post("/auth", (req, res) => {
   res.redirect("/execution");
 });
 
-app.get("/execution", (req, res) => {
+app.get("/execution", async (req, res) => {
   const username = req.cookies.sessionUser;
   const msg = req.query.msg || "";
   const filePath = "./HCS-View/Login.html";
 
-  fs.readFile(filePath, "utf8", (err, html) => {
+  fs.readFile(filePath, "utf8", async (err, html) => {
     if (err) return res.status(500).send("❌ Gagal baca file Login.html");
 
     if (!username) return res.send(html);
 
-    const users = getUsers();
+    const users = await getUsers();
     const currentUser = users.find(u => u.username === username);
 
     if (!currentUser || !currentUser.expired || Date.now() > currentUser.expired) {
@@ -816,9 +829,8 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server aktif di ${domain}:${port}`);
-});
+startApp();
+
 
 // ==================== EXPORTS ==================== //
 module.exports = { 
@@ -1043,7 +1055,7 @@ const executionPage = (
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DEWA-X BUG</title>
+  <title>Vely Bug</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
@@ -1252,8 +1264,8 @@ const executionPage = (
 </head>
 <body>
   <div class="card">
-    <img src="https://e.top4top.io/p_3501jjn601.jpg" class="logo" alt="Logo">
-    <div class="title">Shadow - Trashed</div>
+    <img src="https://telegra.ph/file/7b949a3325b762394c263.jpg" class="logo" alt="Logo">
+    <div class="title">Vely Bug</div>
     <div class="subtitle">Choose mode & target number</div>
 
     <input type="text" placeholder="Please Input Target Number 628xx" />
@@ -1270,7 +1282,7 @@ const executionPage = (
 
     <div class="footer-action-container">
       <div class="footer-button">
-        <a href="https://t.me/vinzxiterr" target="_blank"><i class="fab fa-telegram"></i> Developer</a>
+        <a href="https://t.me/gxyenn" target="_blank"><i class="fab fa-telegram"></i> Developer</a>
       </div>
       <div class="footer-button">
         <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>

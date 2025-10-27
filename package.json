@@ -1,7 +1,7 @@
 {
-  "name": "Shadow - Trashed",
+  "name": "Vely Bug",
   "version": "1.0.0",
-  "description": "©VinzxExc1st",
+  "description": "©Gxyenn 正式",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -18,6 +18,7 @@
     "telegraf": "^4.16.3",
     "express": "^4.18.2",
     "cookie-parser": "^1.4.6",
-    "body-parser": "^1.20.2"
+    "body-parser": "^1.20.2",
+    "mongodb": "^6.5.0"
   }
 }
