@@ -14,10 +14,10 @@ services:
         protocol: HTTP
     env:
       - key: BOT_TOKEN
-        value: "mongodb+srv://gxyenndev_db_user:EsALd5vduVSoClso@cluster0.rnrudep.mongodb.net/VelyBug-Send?retryWrites=true&w=majority"
+        value: "8137964608:AAE6Yo4wWCcb7h3oUA2KcV-GxEn4vkZlbpE"
       - key: OWNER_ID
         value: "-1003283150801"
       - key: MONGO_URI
-        value: "8137964608:AAE6Yo4wWCcb7h3oUA2KcV-GxEn4vkZlbpE"
+        value: "mongodb+srv://gxyenndev_db_user:EsALd5vduVSoClso@cluster0.rnrudep.mongodb.net/VelyBug-Send?retryWrites=true&w=majority"
       - key: PORT
         value: "8080"
