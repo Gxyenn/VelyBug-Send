@@ -328,12 +328,12 @@ const connectToWhatsApp = async (BotNumber, chatId, ctx) => {
 
 // Start command
 bot.command("start", (ctx) => {
-  const teks = `( 🍁 ) ─── ❖ 情報 ❖  
-𝗪𝗵𝗮𝘁𝘀𝗮𝗽𝗽 × 𝗧𝗲𝗹𝗲𝗴𝗿𝗮𝗺  
+  const teks = `
+    VΣᄂY BЦG - ᄂƧΛG
 ─── 革命的な自動化システム ───  
 高速・柔軟性・絶対的な安全性を備えた 次世代ボットが今、覚醒する。
 
-〢「 𝐗𝐈𝐒 ☇ 𝐂𝐨𝐫𝐞 ° 𝐒𝐲𝐬𝐭𝐞𝐦𝐬 」
+〢「 𝐕𝐞𝐥𝐲 ☇ 𝐂𝐨𝐫𝐞 ° 𝐒𝐲𝐬𝐭𝐞𝐦𝐬 」
  ࿇ Author : —!s' Gxyenn 正式
  ࿇ Type : ( Case─Plugins )
  ࿇ League : Asia/Jakarta-
@@ -362,15 +362,15 @@ bot.command("start", (ctx) => {
 │── /setjeda — <1m/1d/1s>
 └────`;
   ctx.replyWithPhoto(
-    { url: "https://files.catbox.moe/ydj2rk.jpg" },
+    { url: "https://files.catbox.moe/xvn2wd.jpeg" },
     {
       caption: teks,
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "👤「所有者」", url: "https://t.me/gxyenn" },
-          { text: "🕊「チャネル」", url: "t.me/gxyenn" }
+            { text: "👤 「 開発者 」", url: "https://t.me/Gxyenn969" },
+          { text: "🕊「 チャネル 」", url: "t.me/GxyennOfficial" }
           ]
         ]
       }
@@ -629,7 +629,7 @@ bot.command("addacces", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addacces Id_\n_Example : /addacces 7066156416_", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addacces Id_\n_Example : /addacces (id)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (data.akses.includes(id)) return ctx.reply("✅ User already has access.");
@@ -647,7 +647,7 @@ bot.command("delacces", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delacces Id_\n_Example : /delacces 7066156416_", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delacces Id_\n_Example : /delacces (id)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (!data.akses.includes(id)) return ctx.reply("❌ User not found.");
@@ -665,7 +665,7 @@ bot.command("addowner", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addowner Id_\n_Example : /addowner 7066156416_", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addowner Id_\n_Example : /addowner (id)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (data.owners.includes(id)) return ctx.reply("❌ Already an owner.");
@@ -682,7 +682,7 @@ bot.command("delowner", async (ctx) => {
   if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delowner Id_\n_Example : /delowner 7066156416_", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delowner Id_\n_Example : /delowner (id)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
 
@@ -711,29 +711,20 @@ bot.command("setjeda", async (ctx) => {
 
 // ==================== BOT INITIALIZATION ==================== //
 console.clear();
-console.log(chalk.blue(`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢀⣤⣶⣾⣿⣿⣿⣷⣶⣤⡀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀
-⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀
-⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀⠀⠀⠀
-⠀⠀⠀⠀⢰⡟⠛⠉⠙⢻⣿⡟⠋⠉⠙⢻⡇⠀⠀⠀⠀
-⠀⠀⠀⠀⢸⣷⣀⣀⣠⣾⠛⣷⣄⣀⣀⣼⡏⠀⠀⠀⠀
-⠀⠀⣀⠀⠀⠛⠋⢻⣿⣧⣤⣸⣿⡟⠙⠛⠀⠀⣀⠀⠀
-⢀⣰⣿⣦⠀⠀⠀⠼⣿⣿⣿⣿⣿⡷⠀⠀⠀⣰⣿⣆⡀
-⢻⣿⣿⣿⣧⣄⠀⠀⠁⠉⠉⠋⠈⠀⠀⣀⣴⣿⣿⣿⡿
-⠀⠀⠀⠈⠙⠻⣿⣶⣄⡀⠀⢀⣠⣴⣿⠿⠛⠉⠁⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠉⣻⣿⣷⣿⣟⠉⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣠⣴⣿⠿⠋⠉⠙⠿⣷⣦⣄⡀⠀⠀⠀⠀
-⣴⣶⣶⣾⡿⠟⠋⠀⠀⠀⠀⠀⠀⠀⠙⠻⣿⣷⣶⣶⣦
-⠙⢻⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⡿⠋
-⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀
-╭╮╱╭┳━━━┳━━━┳╮╱╱╭━━━┳━━━┳━╮╱╭┳━━━╮
-┃┃╱┃┃╭━╮┃╭━╮┃┃╱╱┃╭━╮┃╭━╮┃┃╰╮┃┃╭━╮┃
-┃╰━╯┃┃╱┃┃╰━━┫┃╱╱┃┃╱┃┃┃╱┃┃╭╮╰╯┃┃╱┃┃
-┃╭━╮┃┃╱┃┣━━╮┃┃╱╭┫┃╱┃┃┃╱┃┃┃╰╮┃┃┃╱┃┃
-┃┃╱┃┃╰━╯┃╰━╯┃╰━╯┃╰━╯┃╰━╯┃┃╱┃┃┃╰━╯┃
-╰╯╱╰┻━━━┻━━━┻━━━┻━━━┻━━━┻╯╱╰━┻━━━╯⠀⠀⠀⠀⠀⠀⠀
-`));
+console.log(`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+                ➖➖➖🟩🟩➖🟩🟩
+                ➖➖🟩🟩🟩🟩🟩🟩🟩
+                ➖🟩🟩⬜⬛⬜⬜⬛🟩
+                ➖🟩🟩🟩🟩🟩🟩🟩
+                🟩🟩🟩🟩🟥🟥🟥🟥
+                🟩🟩🟩🟩🟩🟩🟩
+                🟦🟦🟦🟦🟦🟦🟦
+                
+            ╔╗─╔╦═╦╗╔═╦╦══╦╦╦══╗
+            ║╚╦╝║╦╣║╚╗║║╔╗║║║╔═╣
+            ╚╗║╔╣╩╣╚╦╩╗║╔╗║║║╚╗║
+            ─╚═╝╚═╩═╩══╩══╩═╩══╝⠀⠀⠀⠀⠀
+`);
 
 initializeWhatsAppConnections();
 
@@ -749,7 +740,7 @@ async function startApp() {
 ╭─☐ BOT Vely Bug
 ├─ ID OWN : ${OWNER_ID}
 ├─ DEVELOPER : Gxyenn 正式 
-├─ MY SUPPORT : ALLAH 
+├─ MY SUPPORT : Lubis, Stoky, Askaka, Zaa
 ├─ BOT : CONNECTED ✅
 ╰───────────────────`));
 
@@ -765,7 +756,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
-  const filePath = path.join(__dirname, "HCS-View", "Login.html");
+  const filePath = path.join(__dirname, "VelyBug-View", "Login.html");
   fs.readFile(filePath, "utf8", (err, html) => {
     if (err) return res.status(500).send("❌ Gagal baca Login.html");
     res.send(html);
@@ -774,7 +765,7 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   const msg = req.query.msg || "";
-  const filePath = path.join(__dirname, "HCS-View", "Login.html");
+  const filePath = path.join(__dirname, "VelyBug-View", "Login.html");
   fs.readFile(filePath, "utf8", (err, html) => {
     if (err) return res.status(500).send("❌ Gagal baca file Login.html");
     res.send(html);
@@ -797,7 +788,7 @@ app.post("/auth", async (req, res) => {
 app.get("/execution", async (req, res) => {
   const username = req.cookies.sessionUser;
   const msg = req.query.msg || "";
-  const filePath = "./HCS-View/Login.html";
+  const filePath = "./VelyBug-View/Login.html";
 
   fs.readFile(filePath, "utf8", async (err, html) => {
     if (err) return res.status(500).send("❌ Gagal baca file Login.html");
