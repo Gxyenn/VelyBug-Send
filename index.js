@@ -362,7 +362,7 @@ bot.command("start", (ctx) => {
 │── /setjeda — <1m/1d/1s>
 └────`;
   ctx.replyWithPhoto(
-    { url: "https://files.catbox.moe/xvn2wd.jpeg" },
+    { url: "https://files.catbox.moe/y2dbkw.jpeg" },
     {
       caption: teks,
       parse_mode: "Markdown",
