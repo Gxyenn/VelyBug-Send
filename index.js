@@ -630,7 +630,7 @@ bot.command("addacces", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addacces Id_\n_Example : /addacces (id)", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addacces Id_\n_Example : /addacces \\(id\\)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (data.akses.includes(id)) return ctx.reply("✅ User already has access.");
@@ -648,7 +648,7 @@ bot.command("delacces", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delacces Id_\n_Example : /delacces (id)", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delacces Id_\n_Example : /delacces \\(id\\)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (!data.akses.includes(id)) return ctx.reply("❌ User not found.");
@@ -666,7 +666,7 @@ bot.command("addowner", async (ctx) => {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
   
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addowner Id_\n_Example : /addowner (id)", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /addowner Id_\n_Example : /addowner \\(id\\)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
   if (data.owners.includes(id)) return ctx.reply("❌ Already an owner.");
@@ -683,7 +683,7 @@ bot.command("delowner", async (ctx) => {
   if (!await isOwner(userId)) {
     return ctx.reply("[ ! ] - ONLY OWNER USER\n—Please register first to access this feature.");
   }
-  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delowner Id_\n_Example : /delowner (id)", { parse_mode: "Markdown" });
+  if (!id) return ctx.reply("❌ *Syntax Error!*\n\n_Use : /delowner Id_\n_Example : /delowner \\(id\\)", { parse_mode: "Markdown" });
 
   const data = await loadAkses();
 
@@ -1419,4 +1419,4 @@ const executionPage = (
   </script>
 </body>
 </html>`;
-};
+};```
