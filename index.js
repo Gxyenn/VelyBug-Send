@@ -27,7 +27,7 @@ const app = express();
 
 // ==================== GLOBAL VARIABLES ==================== //
 const sessions = new Map();
-let sock; // Will hold the WhatsApp socket connection
+
 
 const { connect, getDB } = require("./database/mongo.js");
 
@@ -201,7 +201,7 @@ const connectToWhatsApp = async (BotNumber, chatId, ctx, isReconnect = false) =>
     }
   };
 
-  sock = makeWASocket({
+  const sock = makeWASocket({
     auth: state,
     printQRInTerminal: !isReconnect, // Only print QR on new connections
     logger: pino({ level: "silent" }),
@@ -310,10 +310,10 @@ bot.command("delbot", async (ctx) => {
 
   try {
     const sock = sessions.get(number);
-    sock.end(new Error("Session deleted by user"));
+    await sock.logout(); // Use logout for a clean disconnect
     sessions.delete(number);
     await removeActiveSession(number);
-    await removeSession(number);
+    // No need to call removeSession as logout should trigger creds removal
     ctx.reply(`✅ Session untuk ${number} berhasil dihapus.`);
   } catch (err) {
     ctx.reply("Gagal menghapus sender.");
