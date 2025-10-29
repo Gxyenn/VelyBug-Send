@@ -24,7 +24,7 @@ const {
 
 // ==================== CONFIGURATION ==================== //
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const OWNER_ID = process.env.OWNER_ID;
+const OWNER_ID = "7197301814";
 const bot = new Telegraf(BOT_TOKEN);
 const port = process.env.PORT || 3000;
 const app = express();
