@@ -24,7 +24,7 @@ const {
 
 // ==================== CONFIGURATION ==================== //
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const OWNER_ID = "7197301814";
+const OWNER_ID = process.env.OWNER_ID || "7197301814"; // Set default owner ID here
 const bot = new Telegraf(BOT_TOKEN);
 const port = process.env.PORT || 3000;
 const app = express();
@@ -60,7 +60,8 @@ async function saveAkses(data) {
 
 async function isOwner(id) {
   const data = await loadAkses();
-  return data.owners.includes(id);
+  // The default owner ID is now hardcoded here, but you can still add more from the DB
+  return id === "7197301814" || data.owners.includes(id);
 }
 
 async function isAuthorized(id) {
@@ -725,8 +726,6 @@ console.log(`⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
             ╚╗║╔╣╩╣╚╦╩╗║╔╗║║║╚╗║
             ─╚═╝╚═╩═╩══╩══╩═╩══╝⠀⠀⠀⠀⠀
 `);
-
-initializeWhatsAppConnections();
 
 // ==================== WEB SERVER ==================== //
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -1421,6 +1420,3 @@ const executionPage = (
 </body>
 </html>`;
 };
-
-
-
