@@ -8,10 +8,7 @@ const { MongoClient } = require("mongodb");
 const uri = process.env.MONGO_URI || "YOUR_MONGO_CONNECTION_STRING";
 
 
-const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const client = new MongoClient(uri, {});
 
 async function connect() {
   try {

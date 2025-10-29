@@ -16,7 +16,9 @@ const fse = require("fs-extra");
 const {
   default: makeWASocket,
   DisconnectReason
-} = require('lotusbail');
+} = require('@whiskeysockets/baileys');
+const { useMongoAuthState } = require('baileys-auth-states');
+const { Boom } = require('@hapi/boom');
 
 // ==================== CONFIGURATION ==================== //
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -57,76 +59,6 @@ async function isAuthorized(id) {
   return (await isOwner(id)) || data.akses.includes(id);
 }
 
-const { proto } = require('lotusbail');
-
-// Fungsi untuk menangani state otentikasi dengan MongoDB
-const useMongoAuthState = async (botNumber) => {
-    const db = getDB();
-    const collection = db.collection('wa_sessions');
-
-    const writeData = async (data, id) => {
-        const sanitizedId = id.replace(/\//g, '__');
-        await collection.updateOne({ _id: sanitizedId, botNumber }, { $set: { data: JSON.stringify(data, undefined, 2) } }, { upsert: true });
-    };
-
-    const readData = async (id) => {
-        try {
-            const sanitizedId = id.replace(/\//g, '__');
-            const doc = await collection.findOne({ _id: sanitizedId, botNumber });
-            return doc ? JSON.parse(doc.data) : null;
-        } catch (error) {
-            return null;
-        }
-    };
-
-    const removeData = async (id) => {
-        try {
-            const sanitizedId = id.replace(/\//g, '__');
-            await collection.deleteOne({ _id: sanitizedId, botNumber });
-        } catch (error) {
-            // ignore
-        }
-    };
-
-    const creds = await readData('creds') || proto.AuthenticationCreds.fromJSON(proto.AuthenticationCreds.create());
-
-    return {
-        state: {
-            creds,
-            keys: {
-                get: async (type, ids) => {
-                    const data = {};
-                    await Promise.all(
-                        ids.map(async (id) => {
-                            let value = await readData(`${type}-${id}`);
-                            if (type === 'app-state-sync-key') {
-                                value = proto.AppStateSyncKeyData.fromObject(value);
-                            }
-                            data[id] = value;
-                        })
-                    );
-                    return data;
-                },
-                set: async (data) => {
-                    const tasks = [];
-                    for (const category in data) {
-                        for (const id in data[category]) {
-                            const value = data[category][id];
-                            const key = `${category}-${id}`;
-                            tasks.push(value ? writeData(value, key) : removeData(key));
-                        }
-                    }
-                    await Promise.all(tasks);
-                },
-            },
-        },
-        saveCreds: () => writeData(creds, 'creds'),
-        removeCreds: async () => {
-            await collection.deleteMany({ botNumber });
-        }
-    };
-};
-
 function parseDuration(str) {
   if (!str || typeof str !== "string") return null;
   const match = str.match(/^(\d+)(s|m|h|d)$/i);
@@ -161,31 +93,13 @@ const removeActiveSession = async (botNumber) => {
     await db.collection('active_sessions').updateOne({ _id: 'sessions' }, { $pull: { numbers: botNumber } });
 };
 
-const writeCreds = async (botNumber, creds) => {
-    const db = getDB();
-    const collection = db.collection('wa_sessions');
-    await collection.updateOne({ _id: 'creds', botNumber }, { $set: { data: JSON.stringify(creds, undefined, 2) } }, { upsert: true });
-};
-
-const removeSession = async (botNumber) => {
-    const db = getDB();
-    const collection = db.collection('wa_sessions');
-    await collection.deleteMany({ botNumber });
-};
-
-// ==================== WHATSAPP CONNECTION HANDLERS ==================== //
-const initializeWhatsAppConnections = async () => {
-  const activeNumbers = await getActiveSessions();
-  console.log(chalk.blue(`\n┌──────────────────────────────┐\n│ Ditemukan ${activeNumbers.length} sesi WhatsApp aktif\n└──────────────────────────────┘ `));
-
-  for (const BotNumber of activeNumbers) {
-    console.log(chalk.green(`Menghubungkan: ${BotNumber}`));
-    await connectToWhatsApp(BotNumber, null, null, true); // silent reconnect
-  }
-};
-
 const connectToWhatsApp = async (BotNumber, chatId, ctx, isReconnect = false) => {
-  const { state, saveCreds, removeCreds } = await useMongoAuthState(BotNumber);
+  const { state, saveCreds, removeCreds } = await useMongoAuthState({
+    uri: process.env.MONGO_URI || "YOUR_MONGO_CONNECTION_STRING",
+    databaseName: "VelyBugSend",
+    collectionName: "sessions",
+    sessionId: BotNumber,
+  });
   
   let statusMessage;
   if (ctx) {
@@ -217,7 +131,7 @@ const connectToWhatsApp = async (BotNumber, chatId, ctx, isReconnect = false) =>
     }
 
     if (connection === "close") {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
       if (statusCode !== DisconnectReason.loggedOut) {
         console.log(`Koneksi ${BotNumber} terputus, mencoba menyambungkan kembali...`);
         if(ctx) await editStatus(`Menghubungkan ulang ${BotNumber}...`);
@@ -448,7 +362,7 @@ async function startApp() {
 ├─ BOT : CONNECTED ✅
 ╰───────────────────`));
 
-  initializeWhatsAppConnections();
+  
   
   // [MODIFIED] Simplified Web Server
   app.get('/', (req, res) => {
